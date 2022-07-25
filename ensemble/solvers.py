@@ -1,6 +1,4 @@
-# Would have been nice to write my own solvers, but alas this is just too easy for cvxpy
-# How can anyone write a paper about solving a new convex problem anymore?
-# No need to write solvers with these powerful, generic ones
+# TODO is there any need for a custom solver? Generic ones work well
 import numpy as np
 import cvxpy as cp
 
@@ -13,10 +11,13 @@ def solve_regressor_mse(preds,
     Solve for optimal regressor ensemble using MSE objective function.
     
     Args:
-      preds:
-      targets:
-      constraints:
-      verbose:
+      preds: an iterable (e.g., list, tuple) over each model's predictions.
+      targets: prediction targets.
+      constraints: constraints for learned ensemble weights ('simplex',
+        'nonnegative' or 'none').
+      verbose: whether CVXPY solver should generate verbose output.
+
+    Returns: weights for optimal ensemble.
     '''
     # Setup
     assert constraints in ['simplex', 'nonnegative', 'none']
@@ -51,10 +52,13 @@ def solve_regressor_mae(preds,
     Solve for optimal regressor ensemble using MAE objective function.
     
     Args:
-      preds:
-      targets:
-      constraints:
-      verbose:
+      preds: an iterable (e.g., list, tuple) over each model's predictions.
+      targets: prediction targets.
+      constraints: constraints for learned ensemble weights ('simplex',
+        'nonnegative' or 'none').
+      verbose: whether CVXPY solver should generate verbose output.
+
+    Returns: weights for optimal ensemble.
     '''
     # Setup
     assert constraints in ['simplex', 'nonnegative', 'none']
@@ -90,10 +94,11 @@ def solve_binary_logloss_probs(preds,
     objective function. Ensembling is performed in the probability space.
     
     Args:
-      preds:
-      targets:
-      constraints:
-      verbose:
+      preds: an iterable (e.g., list, tuple) over each model's predictions.
+      targets: prediction targets.
+      constraints: constraints for learned ensemble weights (only 'simplex'
+        is supported for this problem).
+      verbose: whether CVXPY solver should generate verbose output.
       
     Returns: weights for optimal ensemble.
     '''
@@ -129,10 +134,11 @@ def solve_binary_logloss_logits(preds,
     space.
 
     Args:
-      preds:
-      targets:
-      constraints:
-      verbose:
+      preds: an iterable (e.g., list, tuple) over each model's predictions.
+      targets: prediction targets.
+      constraints: constraints for learned ensemble weights ('simplex',
+        'nonnegative' or 'none').
+      verbose: whether CVXPY solver should generate verbose output.
       
     Returns: weights for optimal ensemble.
     '''
@@ -173,10 +179,11 @@ def solve_multiclass_logloss_probs(preds,
     objective function. Ensembling is performed in the probability space.
     
     Args:
-      preds:
-      targets:
-      constraints:
-      verbose:
+      preds: an iterable (e.g., list, tuple) over each model's predictions.
+      targets: prediction targets.
+      constraints: constraints for learned ensemble weights (only 'simplex'
+        is supported for this problem).
+      verbose: whether CVXPY solver should generate verbose output.
       
     Returns: weights for optimal ensemble.
     '''
@@ -214,10 +221,11 @@ def solve_multiclass_logloss_logits(preds,
     space.
 
     Args:
-      preds:
-      targets:
-      constraints:
-      verbose:
+      preds: an iterable (e.g., list, tuple) over each model's predictions.
+      targets: prediction targets.
+      constraints: constraints for learned ensemble weights ('simplex',
+        'nonnegative' or 'none')
+      verbose: whether CVXPY solver should generate verbose output.
       
     Returns: weights for optimal ensemble.
     '''
