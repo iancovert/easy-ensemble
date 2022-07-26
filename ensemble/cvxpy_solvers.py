@@ -148,7 +148,7 @@ def solve_binary_logloss_logits(preds,
     
     # Get target preds
     preds_stack = np.array(preds)
-    target_preds = preds_stack * targets - preds_stack * (1 - targets)
+    target_preds = preds_stack * targets + (1 - preds_stack) * (1 - targets)
 
     # Objective
     w = cp.Variable(m)

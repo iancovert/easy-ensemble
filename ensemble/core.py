@@ -1,14 +1,14 @@
 import numpy as np
-from ensemble import utils, solvers
+from ensemble import cvxpy_solvers, utils
 
 
 SOLVER_DICT = {
-    'reg:mse': solvers.solve_regressor_mse,
-    'reg:mae': solvers.solve_regressor_mae,
-    'binary:logloss_probs': solvers.solve_binary_logloss_probs,
-    'binary:logloss_logits': solvers.solve_binary_logloss_logits,
-    'multi:logloss_probs': solvers.solve_multiclass_logloss_probs,
-    'multi:logloss_logits': solvers.solve_multiclass_logloss_logits
+    'reg:mse': cvxpy_solvers.solve_regressor_mse,
+    'reg:mae': cvxpy_solvers.solve_regressor_mae,
+    'binary:logloss_probs': cvxpy_solvers.solve_binary_logloss_probs,
+    'binary:logloss_logits': cvxpy_solvers.solve_binary_logloss_logits,
+    'multi:logloss_probs': cvxpy_solvers.solve_multiclass_logloss_probs,
+    'multi:logloss_logits': cvxpy_solvers.solve_multiclass_logloss_logits
 }
 
 
@@ -31,12 +31,10 @@ class Ensemble:
 
     def __init__(self,
                  objective,
-                 constraints,
+                 constraints='simplex',
                  input_transform=None,
                  output_transform=None,
                  verbose=False):
-        pass
-    
         # Verify objective and set solver
         assert objective in SOLVER_DICT.keys(), 'unrecognized solver'
         self.verbose = verbose

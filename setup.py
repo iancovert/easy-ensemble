@@ -15,6 +15,7 @@ setuptools.setup(
     install_requires=[
         'numpy',
         'cvxpy',
+        'osqp',
         'sklearn'
     ],
     classifiers=[
