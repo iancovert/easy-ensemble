@@ -32,8 +32,8 @@ class Ensemble:
     def __init__(self,
                  objective,
                  constraints='simplex',
-                 input_transform=None,
-                 output_transform=None,
+                 max_iters=100,
+                 tolerance=1e-6,
                  verbose=False):
         # Verify objective and set solver
         assert objective in SOLVER_DICT.keys(), 'unrecognized solver'
@@ -50,64 +50,53 @@ class Ensemble:
             assert constraints in ['simplex', 'nonnegative', 'none']
         self.constraints = constraints
         
-        # Set input transform
-        assert input_transform in [None, 'log', 'logit']
-        if input_transform == 'log':
-            assert objective in ['multi:logloss_logits']
+        # Set input/output transforms
+        if objective == 'multi:logloss_logits':
             self.input_transform = utils.stable_log
-        elif input_transform == 'logit':
-            assert objective in ['binary:logloss_logits']
+            self.output_transform = utils.softmax
+        elif objective == 'binary:logloss_logits':
             self.input_transform = utils.stable_logit
+            self.output_transform = utils.sigmoid
         else:
             self.input_transform = None
-        
-        # Set output transform
-        assert output_transform in [None, 'sigmoid', 'softmax']
-        if output_transform == 'sigmoid':
-            assert objective == 'binary:logloss_logits'
-            self.output_transform = utils.sigmoid
-        elif output_transform == 'softmax':
-            assert objective == 'multi:logloss_logits'
-            self.output_transform = utils.softmax
-        else:
             self.output_transform = None
+            
+        # For solver
+        self.max_iters = max_iters
+        self.tolerance = tolerance
     
-    def fit(self, preds_iterable, targets):
+    def fit(self, preds, targets):
         '''
         Fit the learned ensemble.
         
         Args:
-          preds_iterable: an iterable (e.g., list, tuple) over each model's
-            predictions.
+          preds: an iterable (list, tuple) over each model's predictions.
           targets: prediction targets.
         '''
         # Apply input transform
         if self.input_transform:
-            preds_iterable = [self.input_transform(preds) for preds in preds_iterable]
+            preds = [self.input_transform(preds) for preds in preds]
 
         # Find optimal weights
-        self.weights = self.solver(
-            preds_iterable, targets, self.constraints, self.verbose)
+        self.weights = self.solver(list(preds), targets, self.constraints, self.verbose)
         return self
-    
-    def predict(self, preds_iterable):
+
+    def predict(self, preds):
         '''
         Apply the learned ensemble.
         
         Args:
-          preds_iterable: an iterable (e.g., list, tuple) over each model's
-            predictions.
+          preds: an iterable (list, tuple) over each model's predictions.
         '''
         # Apply input transform
         if self.input_transform:
-            preds_iterable = [self.input_transform(preds) for preds in preds_iterable]
+            preds = [self.input_transform(preds) for preds in preds]
             
         # Default to evenly weighted ensemble
         if not hasattr(self, 'weights'):
             print('Warning: defaulting to evenly weighted ensemble')
-            self.weights = np.ones(len(preds_iterable)) / len(preds_iterable)
+            self.weights = np.ones(len(preds)) / len(preds)
         
         # Apply learned ensemble
-        # TODO would be nice if this worked for PyTorch as well
         return utils.apply_ensemble(
-            preds_iterable, self.weights, self.output_transform)
+            list(preds), self.weights, self.output_transform)

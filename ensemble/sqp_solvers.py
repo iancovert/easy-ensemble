@@ -27,10 +27,6 @@ def newton_solver(preds,
     w = np.ones(m) / m
     prev_objective, grad, hess = helper_fn(preds, targets, w)
     
-    # For tracking best solution
-    best_solution = w
-    best_objective = prev_objective
-    
     # Begin optimizing
     converged = False
     for it in range(max_iters):
@@ -41,24 +37,18 @@ def newton_solver(preds,
         objective, grad, hess = helper_fn(preds, targets, w)
         if verbose:
             print(f'Objective after step {it + 1}: {objective}')
-        if objective < best_objective:
-            best_objective = objective
-            best_solution = w
-        else:
-            print('Solution got worse!')
         if (prev_objective - objective) / prev_objective < tolerance:
             converged = True
             if verbose:
                 print(f'Stopping after {it + 1} steps')
             break
-        else:
-            prev_objective = objective
+        prev_objective = objective
 
     # Return result
     if not converged:
         print(f'Did not converge within {max_iters} steps, solution may be inexact')
 
-    return best_solution
+    return w
 
 
 def sqp_solver(preds,
@@ -99,10 +89,6 @@ def sqp_solver(preds,
         l = np.zeros(m)
         u = np.inf * np.ones(m)
     
-    # For tracking best solution
-    best_solution = w
-    best_objective = prev_objective
-    
     # Begin optimizing
     converged = False
     for it in range(max_iters):
@@ -120,24 +106,60 @@ def sqp_solver(preds,
         objective, grad, hess = helper_fn(preds, targets, w)
         if verbose:
             print(f'Objective after step {it + 1}: {objective}')
-        if objective < best_objective:
-            best_objective = objective
-            best_solution = w
-        else:
-            print('SQP solution got worse')
         if (prev_objective - objective) / prev_objective < tolerance:
             converged = True
             if verbose:
                 print(f'Stopping after {it + 1} steps')
             break
-        else:
-            prev_objective = objective
+        prev_objective = objective
 
     # Return result
     if not converged:
         print(f'Did not converge within {max_iters} steps, solution may be inexact')
 
-    return best_solution
+    return w
+
+
+def regressor_mse_helper(preds, targets, w):
+    '''Helper function to calculate objective, grads and hessian.'''
+    preds_stack = np.array(preds)
+    ensemble_preds = w @ preds_stack
+    residuals = ensemble_preds - targets
+    objective = np.sum(residuals ** 2)
+    grad = 2 * np.sum(preds_stack * residuals, axis=1)
+    hess = 2 * np.sum(preds_stack * preds_stack[:, np.newaxis], axis=2)
+    return objective, grad, hess
+
+
+def solve_regressor_mse(preds,
+                        targets,
+                        constraints='simplex',
+                        max_iters=100,
+                        tolerance=1e-6,
+                        verbose=False):
+    '''
+    Solve for optimal regressor ensemble using MSE objective function.
+
+    Args:
+      preds: an iterable (e.g., list, tuple) over each model's predictions.
+      targets: prediction targets.
+      constraints: constraints for learned ensemble weights ('simplex',
+        'nonnegative' or 'none').
+      max_iters: max number of iterations (Newton/SQP steps).
+      tolerance: for detecting convergence.
+      verbose: whether to generate verbose output.
+      
+    Returns: weights for optimal ensemble.
+    '''
+    assert constraints in ['simplex', 'nonnegative', 'none']
+    if constraints == 'none':
+        return newton_solver(
+            preds, targets, regressor_mse_helper, max_iters, tolerance,
+            verbose)
+    else:
+        return sqp_solver(
+            preds, targets, constraints, regressor_mse_helper, max_iters,
+            tolerance, verbose)
 
 
 def binary_logloss_probs_helper(preds, targets, w):
@@ -206,6 +228,8 @@ def solve_binary_logloss_logits(preds,
       targets: prediction targets.
       constraints: constraints for learned ensemble weights ('simplex',
         'nonnegative' or 'none').
+      max_iters: max number of iterations (Newton/SQP steps).
+      tolerance: for detecting convergence.
       verbose: whether to generate verbose output.
       
     Returns: weights for optimal ensemble.
