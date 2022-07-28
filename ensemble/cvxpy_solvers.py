@@ -148,12 +148,12 @@ def solve_binary_logloss_logits(preds,
     
     # Get target preds
     preds_stack = np.array(preds)
-    target_preds = preds_stack * targets + (1 - preds_stack) * (1 - targets)
+    target_logits = preds_stack * targets - preds_stack * (1 - targets)
 
     # Objective
     w = cp.Variable(m)
-    ensemble_preds = w @ target_preds
-    ensemble_logprobs = - cp.logistic(- ensemble_preds)
+    ensemble_logits = w @ target_logits
+    ensemble_logprobs = - cp.logistic(- ensemble_logits)
     objective = - cp.sum(ensemble_logprobs)
     
     # Apply constraints
@@ -240,9 +240,9 @@ def solve_multiclass_logloss_logits(preds,
     
     # Objective
     w = cp.Variable(m)
-    ensemble_preds = cp.vstack([w @ preds_stack[:, :, i] for i in range(k)]).T
-    target_preds = cp.sum(cp.multiply(ensemble_preds, target_onehot), axis=1)
-    ensemble_logprobs = target_preds - cp.log_sum_exp(ensemble_preds, axis=1)
+    ensemble_logits = cp.vstack([w @ preds_stack[:, :, i] for i in range(k)]).T
+    target_logits = cp.sum(cp.multiply(ensemble_logits, target_onehot), axis=1)
+    ensemble_logprobs = target_logits - cp.log_sum_exp(ensemble_logits, axis=1)
     objective = - cp.sum(ensemble_logprobs)
 
     # Apply constraints
