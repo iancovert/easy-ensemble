@@ -27,7 +27,7 @@ def solve_regressor_mse(preds,
     w = cp.Variable(m)
     preds_stack = np.array(preds)
     ensemble_preds = w @ preds_stack
-    objective = cp.sum(cp.square(ensemble_preds - targets))
+    objective = cp.sum_squares(ensemble_preds - targets)
     
     # Apply constraints
     if constraints == 'simplex':

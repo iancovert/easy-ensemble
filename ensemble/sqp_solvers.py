@@ -45,7 +45,7 @@ def newton_solver(preds,
         prev_objective = objective
 
     # Return result
-    if not converged:
+    if not converged and max_iters > 1:
         print(f'Did not converge within {max_iters} steps, solution may be inexact')
 
     return w
@@ -57,6 +57,7 @@ def sqp_solver(preds,
                helper_fn,
                max_iters=100,
                tolerance=1e-5,
+               eps_rel=1e-8,
                verbose=False):
     '''
     Solve for optimal ensemble using SQP.
@@ -69,6 +70,7 @@ def sqp_solver(preds,
       helper_fn: helper function to calculate objective, grads, hessian.
       max_iters: max number of iterations (Newton/SQP steps).
       tolerance: for detecting convergence.
+      eps_rel: relative tolerance for SQP solution.
       verbose: whether to generate verbose output.
       
     Returns: weights for optimal ensemble.
@@ -98,7 +100,7 @@ def sqp_solver(preds,
         
         # Solve problem
         problem = osqp.OSQP()
-        problem.setup(P, q, A, l, u, verbose=verbose)
+        problem.setup(P, q, A, l, u, verbose=verbose, eps_rel=eps_rel)
         solution = problem.solve()
         w = solution.x
         
@@ -114,7 +116,7 @@ def sqp_solver(preds,
         prev_objective = objective
 
     # Return result
-    if not converged:
+    if not converged and max_iters > 1:
         print(f'Did not converge within {max_iters} steps, solution may be inexact')
 
     return w
@@ -125,16 +127,16 @@ def regressor_mse_helper(preds, targets, w):
     preds_stack = np.array(preds)
     ensemble_preds = w @ preds_stack
     residuals = ensemble_preds - targets
-    objective = np.sum(residuals ** 2)
-    grad = 2 * np.sum(preds_stack * residuals, axis=1)
-    hess = 2 * np.sum(preds_stack * preds_stack[:, np.newaxis], axis=2)
+    objective = residuals @ residuals
+    grad = 2 * preds_stack @ residuals
+    hess = 2 * preds_stack @ preds_stack.T
     return objective, grad, hess
 
 
 def solve_regressor_mse(preds,
                         targets,
                         constraints='simplex',
-                        max_iters=100,
+                        max_iters=1,
                         tolerance=1e-6,
                         verbose=False):
     '''
@@ -145,7 +147,8 @@ def solve_regressor_mse(preds,
       targets: prediction targets.
       constraints: constraints for learned ensemble weights ('simplex',
         'nonnegative' or 'none').
-      max_iters: max number of iterations (Newton/SQP steps).
+      max_iters: max number of iterations (Newton/SQP steps). Only a single
+        iteration will be used regardless of the value.
       tolerance: for detecting convergence.
       verbose: whether to generate verbose output.
       
@@ -154,12 +157,12 @@ def solve_regressor_mse(preds,
     assert constraints in ['simplex', 'nonnegative', 'none']
     if constraints == 'none':
         return newton_solver(
-            preds, targets, regressor_mse_helper, max_iters, tolerance,
+            preds, targets, regressor_mse_helper, 1, tolerance,
             verbose)
     else:
         return sqp_solver(
-            preds, targets, constraints, regressor_mse_helper, max_iters,
-            tolerance, verbose)
+            preds, targets, constraints, regressor_mse_helper, 1,
+            tolerance, verbose=verbose)
 
 
 def binary_logloss_probs_helper(preds, targets, w):
@@ -197,7 +200,7 @@ def solve_binary_logloss_probs(preds,
     assert constraints == 'simplex'
     return sqp_solver(
         preds, targets, constraints, binary_logloss_probs_helper, max_iters,
-        tolerance, verbose)
+        tolerance, verbose=verbose)
 
 
 def binary_logloss_logits_helper(preds, targets, w):
@@ -207,7 +210,8 @@ def binary_logloss_logits_helper(preds, targets, w):
     ensemble_logits = w @ target_logits
     ensemble_probs = 1 / (1 + np.exp(- ensemble_logits))
     objective = - np.sum(np.log(ensemble_probs))
-    grad = - np.sum(target_logits * (1 - ensemble_probs), axis=1)
+    # grad = - np.sum(target_logits * (1 - ensemble_probs), axis=1)
+    grad = - target_logits @ (1 - ensemble_probs)
     hess = np.sum(target_logits * target_logits[:, np.newaxis] * ensemble_probs * (1 - ensemble_probs), axis=2)
     return objective, grad, hess
 
@@ -242,4 +246,14 @@ def solve_binary_logloss_logits(preds,
     else:
         return sqp_solver(
             preds, targets, constraints, binary_logloss_logits_helper,
-            max_iters, tolerance, verbose)
+            max_iters, tolerance, verbose=verbose)
+
+
+def multiclass_logloss_logits_helper(preds, targets, w):
+    '''Helper function to calculate objective, grads and hessian.'''
+    pass
+
+
+def multiclass_logloss_probs_helper(preds, targets, w):
+    '''Helper function to calculate objective, grads and hessian.'''
+    pass
