@@ -16,7 +16,8 @@ setuptools.setup(
         'numpy',
         'cvxpy',
         'osqp',
-        'sklearn'
+        'scikit_learn',
+        'scipy'
     ],
     classifiers=[
         'Programming Language :: Python :: 3',

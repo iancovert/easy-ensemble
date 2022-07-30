@@ -1,3 +1,5 @@
+# TODO this file is not currently used
+
 import numpy as np
 import cvxpy as cp
 
