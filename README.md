@@ -65,10 +65,10 @@ from ensemble import Ensemble
 ensemble = Ensemble('reg:mse', 'simplex')
 ```
 
-# How it works
+## How it works
 
 When your loss function is convex (e.g., mean squared error or log-loss), finding the optimal ensemble weights requires solving a convex optimization problem. Adding constraints to the weights does not affect the convexity, but it does make finding the optimal solution a bit more difficult. Here, we find the optimal ensemble weights using *sequential quadratic programming* (SQP), which means that we solve a sequence of quadratic programs (QPs) that approximate the true objective around the current solution. To solve the underlying QPs, we use the excellent [osqp](https://github.com/osqp/osqp) package. While you could find the optimal ensemble weights using projected gradient descent, SQP is very fast and basically hyperparameter-free (no learning rate required).
 
-# Contact
+## Contact
 
 If you have any questions about the package, feel free to email me at <icovert@cs.washington.edu>.
