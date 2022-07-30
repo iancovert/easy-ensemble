@@ -138,6 +138,7 @@ def solve_regressor_mse(preds,
                         constraints='simplex',
                         max_iters=1,
                         tolerance=1e-6,
+                        eps_rel=1e-8,
                         verbose=False):
     '''
     Solve for optimal regressor ensemble using MSE objective function.
@@ -150,6 +151,7 @@ def solve_regressor_mse(preds,
       max_iters: max number of iterations (Newton/SQP steps). Only a single
         iteration will be used regardless of the value.
       tolerance: for detecting convergence.
+      eps_rel: relative tolerance for SQP solution.
       verbose: whether to generate verbose output.
       
     Returns: weights for optimal ensemble.
@@ -162,7 +164,7 @@ def solve_regressor_mse(preds,
     else:
         return sqp_solver(
             preds, targets, constraints, regressor_mse_helper, 1,
-            tolerance, verbose=verbose)
+            tolerance, eps_rel, verbose)
 
 
 def binary_logloss_probs_helper(preds, targets, w):
@@ -181,6 +183,7 @@ def solve_binary_logloss_probs(preds,
                                constraints='simplex',
                                max_iters=100,
                                tolerance=1e-6,
+                               eps_rel=1e-8,
                                verbose=False):
     '''
     Solve for optimal classifier ensemble using log loss (cross entropy)
@@ -193,6 +196,7 @@ def solve_binary_logloss_probs(preds,
         is supported for this problem).
       max_iters: max number of iterations (Newton/SQP steps).
       tolerance: for detecting convergence.
+      eps_rel: relative tolerance for SQP solution.
       verbose: whether to generate verbose output.
       
     Returns: weights for optimal ensemble.
@@ -200,7 +204,7 @@ def solve_binary_logloss_probs(preds,
     assert constraints == 'simplex'
     return sqp_solver(
         preds, targets, constraints, binary_logloss_probs_helper, max_iters,
-        tolerance, verbose=verbose)
+        tolerance, eps_rel, verbose)
 
 
 def binary_logloss_logits_helper(preds, targets, w):
@@ -210,7 +214,6 @@ def binary_logloss_logits_helper(preds, targets, w):
     ensemble_logits = w @ target_logits
     ensemble_probs = 1 / (1 + np.exp(- ensemble_logits))
     objective = - np.sum(np.log(ensemble_probs))
-    # grad = - np.sum(target_logits * (1 - ensemble_probs), axis=1)
     grad = - target_logits @ (1 - ensemble_probs)
     hess = np.sum(target_logits * target_logits[:, np.newaxis] * ensemble_probs * (1 - ensemble_probs), axis=2)
     return objective, grad, hess
@@ -221,6 +224,7 @@ def solve_binary_logloss_logits(preds,
                                 constraints='simplex',
                                 max_iters=100,
                                 tolerance=1e-6,
+                                eps_rel=1e-8,
                                 verbose=False):
     '''
     Solve for optimal classifier ensemble using log loss (cross entropy)
@@ -234,6 +238,7 @@ def solve_binary_logloss_logits(preds,
         'nonnegative' or 'none').
       max_iters: max number of iterations (Newton/SQP steps).
       tolerance: for detecting convergence.
+      eps_rel: relative tolerance for SQP solution.
       verbose: whether to generate verbose output.
       
     Returns: weights for optimal ensemble.
@@ -246,14 +251,105 @@ def solve_binary_logloss_logits(preds,
     else:
         return sqp_solver(
             preds, targets, constraints, binary_logloss_logits_helper,
-            max_iters, tolerance, verbose=verbose)
-
-
-def multiclass_logloss_logits_helper(preds, targets, w):
-    '''Helper function to calculate objective, grads and hessian.'''
-    pass
+            max_iters, tolerance, eps_rel, verbose)
 
 
 def multiclass_logloss_probs_helper(preds, targets, w):
     '''Helper function to calculate objective, grads and hessian.'''
-    pass
+    n, k = preds[0].shape
+    preds_stack = np.array(preds)
+    target_onehot = (np.arange(k)[np.newaxis].repeat(n, 0) == targets[:, np.newaxis]).astype(float)
+    target_probs = (preds_stack * target_onehot).sum(axis=2)
+    ensemble_probs = w @ target_probs
+    objective = - np.sum(np.log(ensemble_probs))
+    grad = - np.sum(target_probs / ensemble_probs, axis=1)
+    hess = np.sum(target_probs * target_probs[:, np.newaxis] / ensemble_probs ** 2, axis=2)
+    return objective, grad, hess
+
+
+def solve_multiclass_logloss_probs(preds,
+                                   targets,
+                                   constraints='simplex',
+                                   max_iters=100,
+                                   tolerance=1e-6,
+                                   eps_rel=1e-8,
+                                   verbose=False):
+    '''
+    Solve for optimal classifier ensemble using log loss (cross entropy)
+    objective function. Ensembling is performed in the probability space.
+    
+    Args:
+      preds: an iterable (e.g., list, tuple) over each model's predictions.
+      targets: prediction targets.
+      constraints: constraints for learned ensemble weights (only 'simplex'
+        is supported for this problem).
+      max_iters: max number of iterations (Newton/SQP steps).
+      tolerance: for detecting convergence.
+      eps_rel: relative tolerance for SQP solution.
+      verbose: whether to generate verbose output.
+      
+    Returns: weights for optimal ensemble.
+    '''
+    assert constraints == 'simplex'
+    return sqp_solver(
+        preds, targets, constraints, multiclass_logloss_probs_helper, max_iters,
+        tolerance, eps_rel, verbose)
+
+
+
+def multiclass_logloss_logits_helper(preds, targets, w):
+    '''Helper function to calculate objective, grads and hessian.'''
+    n, k = preds[0].shape
+    preds_stack = np.array(preds)
+    target_onehot = (np.arange(k)[np.newaxis].repeat(n, 0) == targets[:, np.newaxis]).astype(float)
+    ensemble_logits = (preds_stack.T @ w).T
+    ensemble_probs = np.exp(ensemble_logits) / np.sum(np.exp(ensemble_logits), axis=1, keepdims=True)
+    target_logprobs = np.log(np.sum(ensemble_probs * target_onehot, axis=1))
+    objective = - np.sum(target_logprobs)
+    grad = - np.sum(preds_stack * (target_onehot - ensemble_probs), axis=(1, 2))
+    temp = preds_stack.swapaxes(0, 1) @ ensemble_probs[:, :, np.newaxis]
+    hess = np.sum(
+        preds_stack.swapaxes(0, 1) @ (preds_stack.swapaxes(1, 2) * ensemble_probs.T).T
+        - temp @ temp.swapaxes(1, 2), axis=0)
+    # Another way of writing hessian
+    # hess = np.sum(
+    #     preds_stack.swapaxes(0, 1)
+    #     @ ((np.eye(k) * ensemble_probs[:, np.newaxis])
+    #         - (ensemble_probs.T * ensemble_probs.T[:, np.newaxis]).T)
+    #     @ preds_stack.swapaxes(1, 2).T, axis=0)
+    return objective, grad, hess
+
+
+def solve_multiclass_logloss_logits(preds,
+                                   targets,
+                                   constraints='simplex',
+                                   max_iters=100,
+                                   tolerance=1e-6,
+                                   eps_rel=1e-8,
+                                   verbose=False):
+    '''
+    Solve for optimal classifier ensemble using log loss (cross entropy)
+    objective function. Ensembling is performed in the logit (log probability)
+    space.
+
+    Args:
+      preds: an iterable (e.g., list, tuple) over each model's predictions.
+      targets: prediction targets.
+      constraints: constraints for learned ensemble weights ('simplex',
+        'nonnegative' or 'none').
+      max_iters: max number of iterations (Newton/SQP steps).
+      tolerance: for detecting convergence.
+      eps_rel: relative tolerance for SQP solution.
+      verbose: whether to generate verbose output.
+      
+    Returns: weights for optimal ensemble.
+    '''
+    assert constraints in ['simplex', 'nonnegative', 'none']
+    if constraints == 'none':
+        return newton_solver(
+            preds, targets, multiclass_logloss_logits_helper, max_iters, tolerance,
+            verbose)
+    else:
+        return sqp_solver(
+            preds, targets, constraints, multiclass_logloss_logits_helper,
+            max_iters, tolerance, eps_rel, verbose)

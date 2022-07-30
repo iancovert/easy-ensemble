@@ -225,7 +225,7 @@ def solve_multiclass_logloss_logits(preds,
       constraints: constraints for learned ensemble weights ('simplex',
         'nonnegative' or 'none')
       verbose: whether CVXPY solver should generate verbose output.
-      
+
     Returns: weights for optimal ensemble.
     '''
     # Setup
