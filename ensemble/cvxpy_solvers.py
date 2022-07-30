@@ -1,4 +1,3 @@
-# TODO is there any need for a custom solver? Generic ones work well
 import numpy as np
 import cvxpy as cp
 
@@ -11,7 +10,7 @@ def solve_regressor_mse(preds,
     Solve for optimal regressor ensemble using MSE objective function.
     
     Args:
-      preds: an iterable (list, tuple) over each model's predictions.
+      preds: list or tuple of each model's predictions.
       targets: prediction targets.
       constraints: constraints for learned ensemble weights ('simplex',
         'nonnegative' or 'none').
@@ -51,7 +50,7 @@ def solve_regressor_mae(preds,
     Solve for optimal regressor ensemble using MAE objective function.
     
     Args:
-      preds: an iterable (list, tuple) over each model's predictions.
+      preds: list or tuple of each model's predictions.
       targets: prediction targets.
       constraints: constraints for learned ensemble weights ('simplex',
         'nonnegative' or 'none').
@@ -93,7 +92,7 @@ def solve_binary_logloss_probs(preds,
     objective function. Ensembling is performed in the probability space.
     
     Args:
-      preds: an iterable (list, tuple) over each model's predictions.
+      preds: list or tuple of each model's predictions.
       targets: prediction targets.
       constraints: constraints for learned ensemble weights (only 'simplex'
         is supported for this problem).
@@ -133,7 +132,7 @@ def solve_binary_logloss_logits(preds,
     space.
 
     Args:
-      preds: an iterable (list, tuple) over each model's predictions.
+      preds: list or tuple of each model's predictions.
       targets: prediction targets.
       constraints: constraints for learned ensemble weights ('simplex',
         'nonnegative' or 'none').
@@ -178,7 +177,7 @@ def solve_multiclass_logloss_probs(preds,
     objective function. Ensembling is performed in the probability space.
     
     Args:
-      preds: an iterable (list, tuple) over each model's predictions.
+      preds: list or tuple of each model's predictions.
       targets: prediction targets.
       constraints: constraints for learned ensemble weights (only 'simplex'
         is supported for this problem).
@@ -220,7 +219,7 @@ def solve_multiclass_logloss_logits(preds,
     space.
 
     Args:
-      preds: an iterable (list, tuple) over each model's predictions.
+      preds: list or tuple of each model's predictions.
       targets: prediction targets.
       constraints: constraints for learned ensemble weights ('simplex',
         'nonnegative' or 'none')

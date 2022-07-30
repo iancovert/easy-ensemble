@@ -13,11 +13,11 @@ def newton_solver(preds,
     Solve for optimal ensemble using Newton's algorithm.
     
     Args:
-      preds: an iterable (e.g., list, tuple) over each model's predictions.
+      preds: list or tuple of each model's predictions.
       targets: prediction targets.
       helper_fn: helper function to calculate objective, grads, hessian.
-      max_iters: max number of iterations (Newton/SQP steps).
-      tolerance: for detecting convergence.
+      max_iters: max number of Newton iterations.
+      tolerance: threshold for terminating SQP/Newton iterations.
       verbose: whether to generate verbose output.
       
     Returns: weights for optimal ensemble.
@@ -63,13 +63,13 @@ def sqp_solver(preds,
     Solve for optimal ensemble using SQP.
     
     Args:
-      preds: an iterable (e.g., list, tuple) over each model's predictions.
+      preds: list or tuple of each model's predictions.
       targets: prediction targets.
       constraints: constraints for learned ensemble weights ('simplex' or
         'nonnegative').
       helper_fn: helper function to calculate objective, grads, hessian.
-      max_iters: max number of iterations (Newton/SQP steps).
-      tolerance: for detecting convergence.
+      max_iters: max number of SQP iterations.
+      tolerance: threshold for terminating SQP/Newton iterations.
       eps_rel: relative tolerance for SQP solution.
       verbose: whether to generate verbose output.
       
@@ -144,13 +144,13 @@ def solve_regressor_mse(preds,
     Solve for optimal regressor ensemble using MSE objective function.
 
     Args:
-      preds: an iterable (e.g., list, tuple) over each model's predictions.
+      preds: list or tuple of each model's predictions.
       targets: prediction targets.
       constraints: constraints for learned ensemble weights ('simplex',
         'nonnegative' or 'none').
-      max_iters: max number of iterations (Newton/SQP steps). Only a single
-        iteration will be used regardless of the value.
-      tolerance: for detecting convergence.
+      max_iters: max number of SQP/Newton iterations. Only a single iteration
+        will be used regardless of the value.
+      tolerance: threshold for terminating SQP/Newton iterations.
       eps_rel: relative tolerance for SQP solution.
       verbose: whether to generate verbose output.
       
@@ -190,12 +190,12 @@ def solve_binary_logloss_probs(preds,
     objective function. Ensembling is performed in the probability space.
     
     Args:
-      preds: an iterable (e.g., list, tuple) over each model's predictions.
+      preds: list or tuple of each model's predictions.
       targets: prediction targets.
       constraints: constraints for learned ensemble weights (only 'simplex'
         is supported for this problem).
-      max_iters: max number of iterations (Newton/SQP steps).
-      tolerance: for detecting convergence.
+      max_iters: max number of SQP/Newton iterations.
+      tolerance: threshold for terminating SQP/Newton iterations.
       eps_rel: relative tolerance for SQP solution.
       verbose: whether to generate verbose output.
       
@@ -232,12 +232,12 @@ def solve_binary_logloss_logits(preds,
     space.
 
     Args:
-      preds: an iterable (e.g., list, tuple) over each model's predictions.
+      preds: list or tuple of each model's predictions.
       targets: prediction targets.
       constraints: constraints for learned ensemble weights ('simplex',
         'nonnegative' or 'none').
-      max_iters: max number of iterations (Newton/SQP steps).
-      tolerance: for detecting convergence.
+      max_iters: max number of SQP/Newton iterations.
+      tolerance: threshold for terminating SQP/Newton iterations.
       eps_rel: relative tolerance for SQP solution.
       verbose: whether to generate verbose output.
       
@@ -279,12 +279,12 @@ def solve_multiclass_logloss_probs(preds,
     objective function. Ensembling is performed in the probability space.
     
     Args:
-      preds: an iterable (e.g., list, tuple) over each model's predictions.
+      preds: list or tuple of each model's predictions.
       targets: prediction targets.
       constraints: constraints for learned ensemble weights (only 'simplex'
         is supported for this problem).
-      max_iters: max number of iterations (Newton/SQP steps).
-      tolerance: for detecting convergence.
+      max_iters: max number of SQP/Newton iterations.
+      tolerance: threshold for terminating SQP/Newton iterations.
       eps_rel: relative tolerance for SQP solution.
       verbose: whether to generate verbose output.
       
@@ -321,24 +321,24 @@ def multiclass_logloss_logits_helper(preds, targets, w):
 
 
 def solve_multiclass_logloss_logits(preds,
-                                   targets,
-                                   constraints='simplex',
-                                   max_iters=100,
-                                   tolerance=1e-6,
-                                   eps_rel=1e-8,
-                                   verbose=False):
+                                    targets,
+                                    constraints='simplex',
+                                    max_iters=100,
+                                    tolerance=1e-6,
+                                    eps_rel=1e-8,
+                                    verbose=False):
     '''
     Solve for optimal classifier ensemble using log loss (cross entropy)
     objective function. Ensembling is performed in the logit (log probability)
     space.
 
     Args:
-      preds: an iterable (e.g., list, tuple) over each model's predictions.
+      preds: list or tuple of each model's predictions.
       targets: prediction targets.
       constraints: constraints for learned ensemble weights ('simplex',
         'nonnegative' or 'none').
-      max_iters: max number of iterations (Newton/SQP steps).
-      tolerance: for detecting convergence.
+      max_iters: max number of SQP/Newton iterations.
+      tolerance: threshold for terminating SQP/Newton iterations.
       eps_rel: relative tolerance for SQP solution.
       verbose: whether to generate verbose output.
       
